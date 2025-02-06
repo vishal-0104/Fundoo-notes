@@ -1,7 +1,7 @@
 module Api
   module V1 
     class UsersController < ApplicationController
-      skip_before_action :verify_authenticity_token
+      skip_before_action :authenticate_user!, only: [:create_user, :user_login, :forgot_password, :reset_password]
 
       def create_user
         result = UsersService.create_user(user_params)

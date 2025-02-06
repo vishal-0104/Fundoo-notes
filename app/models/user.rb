@@ -1,7 +1,10 @@
 # require 'bcrypt'
 class User < ApplicationRecord
   # include BCrypt
-
+  has_and_belongs_to_many :notes
+  has_many :notes, dependent: :destroy
+  has_many :collaborators, dependent: :destroy
+  
   has_secure_password
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true, format: {with: URI::MailTo::EMAIL_REGEXP, message: "is not a valid email"}
