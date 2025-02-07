@@ -1,3 +1,5 @@
+require_relative 'rabbitmq_publisher'
+
 class NotesService
   def initialize(user, params)
     @user = user
@@ -5,16 +7,24 @@ class NotesService
   end
 
   def list_notes
-    @user.notes.where(is_deleted: false)
+    notes = @user.notes.where(is_deleted: false)
+    RabbitMQPublisher.publish("notes_queue", { event: "list_notes", user_id: @user.id })
+    notes
   end
 
   def create_note
     note = @user.notes.build(@params)
-    note.save ? { success: true, note: note } : { success: false, errors: note.errors.full_messages }
+    if note.save
+      RabbitMQPublisher.publish("notes_queue", { event: "create_note", note_id: note.id, user_id: @user.id })
+      { success: true, note: note }
+    else
+      { success: false, errors: note.errors.full_messages }
+    end
   end
 
   def update_note(note)
     if note.update(@params)
+      RabbitMQPublisher.publish("notes_queue", { event: "update_note", note_id: note.id, user_id: @user.id })
       { success: true, note: note }
     else
       { success: false, errors: note.errors.full_messages }
@@ -22,11 +32,17 @@ class NotesService
   end
 
   def soft_delete(note)
-    note.update(is_deleted: true) ? { success: true, message: 'Note soft deleted successfully' } : { success: false, errors: note.errors.full_messages }
+    if note.update(is_deleted: true)
+      RabbitMQPublisher.publish("notes_queue", { event: "soft_delete", note_id: note.id, user_id: @user.id })
+      { success: true, message: 'Note soft deleted successfully' }
+    else
+      { success: false, errors: note.errors.full_messages }
+    end
   end
 
   def archive(note)
     if note.update(is_archived: @params[:is_archived])
+      RabbitMQPublisher.publish("notes_queue", { event: "archive", note_id: note.id, user_id: @user.id })
       { success: true, message: 'Note archived status updated successfully', note: note }
     else
       { success: false, errors: note.errors.full_messages }
@@ -35,6 +51,7 @@ class NotesService
 
   def change_color(note)
     if note.update(color: @params[:color])
+      RabbitMQPublisher.publish("notes_queue", { event: "change_color", note_id: note.id, user_id: @user.id })
       { success: true, message: 'Note color updated' }
     else
       { success: false, errors: note.errors.full_messages }
@@ -47,10 +64,10 @@ class NotesService
 
     user = User.find_by(email: email)
     return { success: false, error: 'User not found' } unless user
-
     return { success: false, error: 'User is already a collaborator' } if note.collaborators.include?(user)
 
     note.collaborators << user
+    RabbitMQPublisher.publish("notes_queue", { event: "add_collaborator", note_id: note.id, collaborator_id: user.id })
     { success: true, message: 'Collaborator added successfully', note: note }
   end
 end

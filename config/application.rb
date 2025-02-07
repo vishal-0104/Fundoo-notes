@@ -1,3 +1,5 @@
+require_relative '../app/services/rabbitmq_consumer'
+
 require_relative "boot"
 
 require "rails/all"

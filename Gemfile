@@ -65,3 +65,5 @@ end
 gem "jwt", "~> 2.10"
 
 gem "dotenv-rails", "~> 3.1"
+
+gem "bunny", "~> 2.23"
