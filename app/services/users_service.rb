@@ -18,25 +18,15 @@ class UsersService
   end
 
   def self.authenticate_user(params)
-    Rails.logger.info("🔹 Authenticating user: #{params[:email]}")
-  
     user = User.find_by(email: params[:email])
+    
+    raise InvalidEmailError, "Invalid email" unless user
+    raise InvalidPasswordError, "Invalid password" unless user.authenticate(params[:password])
   
-    if user.nil?
-      Rails.logger.error("❌ Invalid Email: #{params[:email]}")
-      raise InvalidEmailError, "Invalid email"
-    end
-  
-    unless user.authenticate(params[:password])
-      Rails.logger.error("❌ Invalid Password for user: #{params[:email]}")
-      raise InvalidPasswordError, "Invalid password"
-    end
-  
-    token = JsonWebToken.encode(user_id: user.id, name: user.name, email: user.email)
-    Rails.logger.info("✅ Login Successful! Token Generated")
-  
+    token = JsonWebToken.encode(user_id: user.id) # Generate JWT token
     { success: true, token: token }
   end
+  
 
   def self.forgot_password(email)
     begin

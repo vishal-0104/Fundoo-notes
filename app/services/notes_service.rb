@@ -7,38 +7,51 @@ class NotesService
   end
 
   def list_notes
-    notes = @user.notes.where(is_deleted: false)
+    cache_key = "user_#{@user.id}_notes"
+    notes = $redis.get(cache_key)
+  
+    if notes.nil?
+      notes = @user.notes.where(is_deleted: false).to_json
+      $redis.set(cache_key, notes, ex: 60.minutes.to_i) # Cache for 1 hour
+    end
+  
     RabbitMQPublisher.publish("notes_queue", { event: "list_notes", user_id: @user.id })
-    notes
+    JSON.parse(notes)
   end
+  
 
   def create_note
     note = @user.notes.build(@params)
     if note.save
+      $redis.del("user_#{@user.id}_notes") # Clear cache
       RabbitMQPublisher.publish("notes_queue", { event: "create_note", note_id: note.id, user_id: @user.id })
       { success: true, note: note }
     else
       { success: false, errors: note.errors.full_messages }
     end
   end
+  
 
   def update_note(note)
     if note.update(@params)
+      $redis.del("user_#{@user.id}_notes") # Clear cache
       RabbitMQPublisher.publish("notes_queue", { event: "update_note", note_id: note.id, user_id: @user.id })
       { success: true, note: note }
     else
       { success: false, errors: note.errors.full_messages }
     end
   end
-
+  
   def soft_delete(note)
     if note.update(is_deleted: true)
+      $redis.del("user_#{@user.id}_notes") # Clear cache
       RabbitMQPublisher.publish("notes_queue", { event: "soft_delete", note_id: note.id, user_id: @user.id })
       { success: true, message: 'Note soft deleted successfully' }
     else
       { success: false, errors: note.errors.full_messages }
     end
   end
+  
 
   def archive(note)
     if note.update(is_archived: @params[:is_archived])

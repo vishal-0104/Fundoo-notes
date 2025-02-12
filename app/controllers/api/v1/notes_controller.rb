@@ -105,10 +105,25 @@ module Api
       def authenticate_user
         header = request.headers['Authorization']
         token = header.split(' ').last if header
-        decoded = JsonWebToken.decode(token)
-        @current_user = User.find_by(id: decoded[:user_id]) if decoded
-        render json: { error: 'Unauthorized' }, status: :unauthorized unless @current_user
+        return render json: { error: 'Unauthorized' }, status: :unauthorized unless token
+      
+        user_id = $redis.get("auth_token_#{token}")
+      
+        if user_id.nil?
+          decoded = JsonWebToken.decode(token)
+          return render json: { error: 'Unauthorized' }, status: :unauthorized unless decoded
+      
+          user = User.find_by(id: decoded[:user_id])
+          return render json: { error: 'Unauthorized' }, status: :unauthorized unless user
+      
+          $redis.set("auth_token_#{token}", user.id, ex: 60.minutes.to_i) # Cache for 1 hour
+        else
+          user = User.find_by(id: user_id)
+        end
+      
+        @current_user = user
       end
+      
 
       def current_user
         @current_user

@@ -1,0 +1,322 @@
+openapi: 3.0.1
+info:
+  title: Fundoo Notes API
+  description: API documentation for Fundoo Notes application
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+paths:
+  /users:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - name
+                    - email
+                    - password
+                    - mobile_number
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    mobile_number:
+                      type: string 
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Validation error
+
+  /users/login:
+    post:
+      summary: Authenticate user and generate JWT token
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                    - password
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+
+  /users/forgot_password:
+    put:
+      summary: Send OTP for password reset
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    email:
+                      type: string
+      responses:
+        '200':
+          description: OTP sent successfully
+        '404':
+          description: User not found
+
+  /users/reset_password/{id}:
+    put:
+      summary: Reset password using OTP
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - otp
+                    - new_password
+                  properties:
+                    otp:
+                      type: integer
+                    new_password:
+                      type: string
+      responses:
+        '200':
+          description: Password reset successful
+        '400':
+          description: Invalid OTP
+
+
+  /notes:
+    get:
+      summary: Get all notes
+      tags:
+        - Notes
+      security:
+        - bearerAuth: [] 
+      responses:
+        '200':
+          description: List of notes
+    post:
+      summary: Create a new note
+      tags:
+        - Notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      security:
+        - bearerAuth: [] 
+      responses:
+        '201':
+          description: Note created successfully
+
+  /notes/{id}:
+    get:
+      summary: Get a note by ID
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []       
+      responses:
+        '200':
+          description: Note retrieved successfully
+        '404':
+          description: Note not found
+    put:
+      summary: Update a note
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      security:
+        - bearerAuth: []             
+      responses:
+        '200':
+          description: Note updated successfully
+        '400':
+          description: Validation error
+    patch:
+      summary: Soft delete a note
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []       
+      responses:
+        '200':
+          description: Note soft deleted
+    delete:
+      summary: Permanently delete a note
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []       
+      responses:
+        '200':
+          description: Note deleted permanently
+
+  /notes/{id}/archive:
+    put:
+      summary: Archive or unarchive a note
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_archived:
+                  type: boolean
+      security:
+        - bearerAuth: []            
+      responses:
+        '200':
+          description: Archive status updated
+
+  /notes/{id}/change_color:
+    put:
+      summary: Change note color
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                color:
+                  type: string
+      security:
+        - bearerAuth: [] 
+      responses:
+        '200':
+          description: Note color updated
+
+  /notes/{id}/add_collaborator:
+    post:
+      summary: Add a collaborator to a note
+      tags:
+        - Notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      security:
+        - bearerAuth: []            
+      responses:
+        '200':
+          description: Collaborator added
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

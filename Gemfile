@@ -41,6 +41,7 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 group :development, :test do
+  gem "rspec-rails"
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
@@ -67,3 +68,17 @@ gem "jwt", "~> 2.10"
 gem "dotenv-rails", "~> 3.1"
 
 gem "bunny", "~> 2.23"
+
+
+
+
+
+  gem 'rswag'
+  gem 'rswag-ui'
+  gem 'rswag-api'
+   gem 'rswag-specs'
+  gem 'rspec-rails'
+
+
+
+gem 'redis', '~> 4.8'
