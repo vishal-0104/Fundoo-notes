@@ -81,4 +81,4 @@ gem "bunny", "~> 2.23"
 
 
 
-gem 'redis', '~> 4.8'
+gem 'redis', '~> 5.3'
