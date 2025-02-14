@@ -10,9 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_05_084836) do
+ActiveRecord::Schema[7.1].define(version: 2025_02_05_084836) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension "pg_catalog.plpgsql"
+  enable_extension "plpgsql"
 
   create_table "collaborators", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -24,11 +24,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_05_084836) do
   end
 
   create_table "notes", force: :cascade do |t|
-    t.string "title", null: false
+    t.string "title"
     t.text "content"
-    t.string "color", default: "#FFFFFF"
-    t.boolean "is_deleted", default: false
-    t.boolean "is_archived", default: false
+    t.string "color"
+    t.boolean "is_deleted"
+    t.boolean "is_archived"
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

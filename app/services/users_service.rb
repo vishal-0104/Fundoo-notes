@@ -1,3 +1,4 @@
+
 require_relative 'rabbitmq_publisher'  # Ensure the file is loaded
 
 class UsersService
@@ -9,13 +10,23 @@ class UsersService
   @@otp_generated_at = nil
 
   def self.create_user(params)
-    user = User.new(params)
-    if user.save
-      { success: true, user: user }
-    else
-      { success: false, errors: user.errors }
+    begin
+      user = User.new(params)
+  
+      if user.save
+        Rails.logger.info("✅ User created successfully: #{user.email}")
+        { success: true, user: user }
+      else
+        Rails.logger.error("❌ User creation failed: #{user.errors.full_messages}")
+        { success: false, errors: user.errors.to_hash }  # Return a hash instead of an array
+      end
+    rescue StandardError => e
+      Rails.logger.error("⚠️ Unexpected Error during user creation: #{e.message}")
+      { success: false, error: "Something went wrong: #{e.message}" }
     end
   end
+  
+  
 
   def self.authenticate_user(params)
     user = User.find_by(email: params[:email])

@@ -1,7 +1,8 @@
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.1"
+gem "rails", "~> 8.0"
+
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
@@ -16,9 +17,27 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-
+gem "jwt"
+gem 'dotenv-rails', groups: [:development, :test]
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
+gem "bunny"
+gem "redis"
+
+group :development, :test do
+  gem "rswag-ui"
+  gem "rswag-api"
+  gem "rswag-specs"
+
+
+end
+group :development, :test do
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+  gem 'faker'
+end
+
+
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
@@ -41,7 +60,6 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 group :development, :test do
-  gem "rspec-rails"
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
@@ -63,22 +81,5 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem "jwt", "~> 2.10"
-
-gem "dotenv-rails", "~> 3.1"
-
-gem "bunny", "~> 2.23"
-
-
-
-
-
-  gem 'rswag'
-  gem 'rswag-ui'
-  gem 'rswag-api'
-   gem 'rswag-specs'
-  gem 'rspec-rails'
-
-
-
-gem 'redis', '~> 4.8'
+gem 'actionview', '~> 8.0.0'
+gem 'fakeredis'

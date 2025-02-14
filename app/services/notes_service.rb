@@ -5,44 +5,38 @@ class NotesService
   def initialize(user, params)
     @user = user
     @params = params
+    @@redis = Redis.new
   end
 
   def list_notes
     cache_key = "user_#{@user.id}_notes"
-  
-    begin
-      notes = @@redis.get(cache_key)
-      puts "Redis Fetch: #{notes.nil? ? 'MISS' : 'HIT'}"
-  
-      if notes.nil?
-        notes = @user.notes.where(is_deleted: false).to_json
-        @@redis.set(cache_key, notes, ex: 60.minutes.to_i) # Cache for 1 hour
-        puts "Data stored in Redis"
-      else
-        puts "Data retrieved from Redis"
-      end
-  
+    cached_data = @@redis.get(cache_key)
+
+    if cached_data
+      JSON.parse(cached_data)
+    else
+      notes = @user.notes.where(is_deleted: false).as_json
+      @@redis.set(cache_key, notes.to_json)
       RabbitMQPublisher.publish("notes_queue", { event: "list_notes", user_id: @user.id })
-      JSON.parse(notes) # Return parsed JSON data
-    rescue => e
-      puts "Redis Error: #{e.message}"
-      @user.notes.where(is_deleted: false) # Fallback to database
+      notes
     end
   end
   
   
   
 
+  
   def create_note
-    note = @user.notes.build(@params)
-    if note.save
-      @@redis.del("user_#{@user.id}_notes") # Clear cache
-      RabbitMQPublisher.publish("notes_queue", { event: "create_note", note_id: note.id, user_id: @user.id })
+    note = @user.notes.create(@params)
+    if note.persisted?
+      @@redis.del("user_#{@user.id}_notes") # Ensure Redis cache is cleared
+      RabbitMQPublisher.publish("notes_queue", { event: "create_note", note_id: note.id })
       { success: true, note: note }
     else
-      { success: false, errors: note.errors.full_messages }
+      { success: false, error: note.errors.full_messages }
     end
   end
+  
   
 
   def update_note(note)
@@ -68,21 +62,25 @@ class NotesService
 
   def archive(note)
     if note.update(is_archived: @params[:is_archived])
+      @@redis.del("user_#{@user.id}_notes") # Ensure cache is cleared
       RabbitMQPublisher.publish("notes_queue", { event: "archive", note_id: note.id, user_id: @user.id })
       { success: true, message: 'Note archived status updated successfully', note: note }
     else
       { success: false, errors: note.errors.full_messages }
     end
   end
+  
 
   def change_color(note)
     if note.update(color: @params[:color])
+      @@redis.del("user_#{@user.id}_notes") # Ensure cache is cleared
       RabbitMQPublisher.publish("notes_queue", { event: "change_color", note_id: note.id, user_id: @user.id })
       { success: true, message: 'Note color updated' }
     else
       { success: false, errors: note.errors.full_messages }
     end
   end
+  
 
   def add_collaborator(note)
     email = @params[:email]
