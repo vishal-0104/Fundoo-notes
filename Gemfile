@@ -83,3 +83,5 @@ end
 
 gem 'actionview', '~> 8.0.0'
 gem 'fakeredis'
+
+gem "rack-cors"

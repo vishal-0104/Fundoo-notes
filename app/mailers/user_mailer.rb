@@ -1,10 +1,14 @@
 class UserMailer < ApplicationMailer
   default from: "kanojiavishal0401@gmail.com"
 
-  def text_mail(email,otp)
-    @message = "Here is your One Time Password: #{otp}"
-    Rails.logger.info "Sending mail to #{email}, Please wait..."
-    mail(to: "latherabhinav55@gmail.com", subject: "Reset Password")
-    Rails.logger.info "Sent Successfully!!"
+  def forgot_password_email(email, otp)
+    @otp = otp
+    Rails.logger.info "📧 Sending OTP email to #{email}, please wait..."
+    
+    mail(to: email, subject: "Fundoo Notes - Reset Password OTP") do |format|
+      format.text { render plain: "Your OTP for password reset is: #{@otp}. This OTP will expire in 1 minute." }
+    end
+
+    Rails.logger.info "✅ OTP email sent successfully to #{email}!"
   end
 end

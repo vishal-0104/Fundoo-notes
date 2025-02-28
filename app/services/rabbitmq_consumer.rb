@@ -3,26 +3,31 @@ require 'json'
 require 'net/smtp'
 
 class RabbitMQConsumer
-  def self.start(queue_name = "notes_queue")
+  def self.start
     connection = Bunny.new
     connection.start
-
     channel = connection.create_channel
-    queue = channel.queue(queue_name, durable: true)
 
-    puts "🟢 [RabbitMQ] Waiting for messages in #{queue_name}..."
-
-    queue.subscribe(block: true) do |_delivery_info, _properties, body|
+    # Listen to Notes Queue
+    notes_queue = channel.queue("notes_queue", durable: true)
+    puts "🟢 [RabbitMQ] Waiting for messages in notes_queue..."
+    notes_queue.subscribe(block: false, manual_ack: true) do |delivery_info, _properties, body|
       message = JSON.parse(body)
-      puts "📥 [RabbitMQ] Received message: #{message}"
-
-      process_message(message)
+      process_notes_message(message)
+      channel.ack(delivery_info.delivery_tag)
     end
 
-    connection.close
+    # Listen to Email Queue
+    email_queue = channel.queue("email_queue", durable: true)
+    puts "📥 [RabbitMQ] Waiting for messages in email_queue..."
+    email_queue.subscribe(block: true, manual_ack: true) do |delivery_info, _properties, body|
+      message = JSON.parse(body)
+      process_email_message(message)
+      channel.ack(delivery_info.delivery_tag)
+    end
   end
 
-  def self.process_message(message)
+  def self.process_notes_message(message)
     case message["event"]
     when "create_note"
       puts "📝 New note created with ID #{message['note_id']} by User #{message['user_id']}"
@@ -40,25 +45,8 @@ class RabbitMQConsumer
       puts "⚠️ Unknown event: #{message['event']}"
     end
   end
-  
-  def self.start(queue_name = "email_queue")
-    connection = Bunny.new
-    connection.start
 
-    channel = connection.create_channel
-    queue = channel.queue(queue_name, durable: true)
-
-    puts "📥 [RabbitMQ] Waiting for messages in #{queue_name}..."
-
-    queue.subscribe(block: true) do |_delivery_info, _properties, body|
-      message = JSON.parse(body)
-      puts "📩 [RabbitMQ] Received message: #{message}"
-
-      process_message(message)
-    end
-  end
-
-  def self.process_message(message)
+  def self.process_email_message(message)
     case message["event"]
     when "forgot_password"
       send_reset_password_email(message["email"], message["otp"])
@@ -70,7 +58,11 @@ class RabbitMQConsumer
   def self.send_reset_password_email(email, otp)
     email_body = "Your OTP for password reset is: #{otp}. This OTP will expire in 1 minute."
 
-    # Simulating email sending (replace with actual email service)
-    puts "📧 Sending OTP email to #{email}: #{email_body}"
+    begin
+      UserMailer.forgot_password_email(email, otp).deliver_now
+      puts "📧 OTP email successfully sent to #{email}"
+    rescue StandardError => e
+      puts "❌ Error sending email: #{e.message}"
+    end
   end
 end

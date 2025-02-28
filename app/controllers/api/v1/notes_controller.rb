@@ -45,14 +45,18 @@ module Api
       end
 
       def archive
-        service = NotesService.new(current_user, params[:note])
-        result = service.archive(@note)
-        if result[:success]
-          render json: { message: result[:message], note: result[:note] }, status: :ok
+        note = Note.find(params[:id])
+        if note.update(is_archived: true)
+          render json: { message: "Note archived successfully", note: note }, status: :ok
         else
-          render json: { error: result[:errors] }, status: :unprocessable_entity
+          render json: { errors: note.errors.full_messages }, status: :unprocessable_entity
         end
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Note not found" }, status: :not_found
+      rescue StandardError => e
+        render json: { error: e.message }, status: :internal_server_error
       end
+      
 
       def change_color
         service = NotesService.new(current_user, params)

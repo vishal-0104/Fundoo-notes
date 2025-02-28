@@ -1,11 +1,13 @@
 require_relative 'rabbitmq_publisher'
+require 'redis'
 
 class NotesService
+  # Initialize Redis only once at the class level
   @@redis = Redis.new(host: "localhost", port: 6379)
+
   def initialize(user, params)
     @user = user
     @params = params
-    @@redis = Redis.new
   end
 
   def list_notes
@@ -21,11 +23,7 @@ class NotesService
       notes
     end
   end
-  
-  
-  
 
-  
   def create_note
     note = @user.notes.create(@params)
     if note.persisted?
@@ -36,8 +34,6 @@ class NotesService
       { success: false, error: note.errors.full_messages }
     end
   end
-  
-  
 
   def update_note(note)
     if note.update(@params)
@@ -48,7 +44,7 @@ class NotesService
       { success: false, errors: note.errors.full_messages }
     end
   end
-  
+
   def soft_delete(note)
     if note.update(is_deleted: true)
       @@redis.del("user_#{@user.id}_notes") # Clear cache
@@ -58,7 +54,6 @@ class NotesService
       { success: false, errors: note.errors.full_messages }
     end
   end
-  
 
   def archive(note)
     if note.update(is_archived: @params[:is_archived])
@@ -69,7 +64,6 @@ class NotesService
       { success: false, errors: note.errors.full_messages }
     end
   end
-  
 
   def change_color(note)
     if note.update(color: @params[:color])
@@ -80,7 +74,6 @@ class NotesService
       { success: false, errors: note.errors.full_messages }
     end
   end
-  
 
   def add_collaborator(note)
     email = @params[:email]

@@ -20,21 +20,31 @@ class ApplicationController < ActionController::Base
   # end
 
   before_action :authenticate_user!
+  before_action :initialize_redis
   protect_from_forgery with: :null_session, if: -> { request.format.json? }
 
   def authenticate_user!
-    header = request.headers["Authorization"]
-    token = header.split(" ").last if header
-    decoded = JsonWebToken.decode(token)
-    @current_user = User.find(decoded[:user_id]) if decoded
-  rescue
-    render json: { error: "Unauthorized" }, status: :unauthorized
+    token = request.headers['Authorization']&.split(' ')&.last
+  
+    unless token
+      render json: { error: 'Unauthorized, token missing' }, status: :unauthorized
+      return
+    end
+  
+    decoded_token = JsonWebToken.decode(token)
+    unless decoded_token
+      render json: { error: 'Unauthorized, invalid token' }, status: :unauthorized
+      return
+    end
+  
+    @current_user = User.find_by(id: decoded_token[:user_id])
+    
+    unless @current_user
+      render json: { error: 'User not found' }, status: :unauthorized
+      return
+    end
   end
   
-
-  def current_user
-    @current_user ||= User.find_by(id: decoded_token[:user_id]) if decoded_token
-  end
 
   private
 
@@ -43,4 +53,7 @@ class ApplicationController < ActionController::Base
     JsonWebToken.decode(token) if token
   end
 
+  def initialize_redis
+    $redis ||= Redis.new(host: "localhost", port: 6379)
+  end
 end

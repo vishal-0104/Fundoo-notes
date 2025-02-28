@@ -51,7 +51,7 @@ RSpec.describe "Users API", type: :request do
     end
 
     context "when login fails" do
-      it "returns an error for invalid credentials" do
+      it "returns an error for invalid email" do
         post "/api/v1/users/login", params: { user: { email: "wrong@example.com", password: "wrongpass" } }
 
         expect(response).to have_http_status(:bad_request)
