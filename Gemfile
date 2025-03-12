@@ -81,7 +81,7 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem 'actionview', '~> 8.0.0'
+gem 'actionview', '~> 8.0.2'
 gem 'fakeredis'
 
 gem "rack-cors"
